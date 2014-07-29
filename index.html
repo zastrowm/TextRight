@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>TypeScript HTML App</title>
+    <link rel="stylesheet" href="app.css" type="text/css" />
+    <script src="Util.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+  <h1>TypeScript HTML App</h1>
+<pre id="text">
+
+### This is a header
+
+--- This is a style block ---
+
+> This is a quote
+
+ > This is also a quote
+
+ >And so is this
+But this is some text
+followed by a blank line
+ - Followed by a list item
+ - and another list item
+Woot
+
+But this is not a list
+- because it does not
+start with a space
+
+ - List Item 1
+ - List Item 2
+ - List Item 3
+ - List Item 4 followed by
+   - Start of sublist 1
+   - Start of sublist 2
+ - List Item 5
+ - List Item 6
+       Start of a code block
+       And some more
+       And some more
+   And the continuation of list item 6
+ - And a new Item 7
+   by the start of a paragraph
+ 1. Start of List # 1
+ 2. Start of List # 2
+
+!!data!!
+  Some Text Content
+!!-data!!
+</pre>
+  <script>
+    var lines = document.getElementById('text')
+      .textContent
+      .replace('!!data!!', "<data>")
+      .replace("!!-data!!", "</data>")
+      .split('\n');
+
+    var result = TextRight.parse(lines);
+    document.getElementById('text').textContent = JSON.stringify(
+      result,
+      function (key, value) {
+        if (key == "type") {
+          return TextRight.LineBlockType[value].toString();
+        }
+
+        return value;
+      },
+      "  ");
+  </script>
+</body>
+</html>
