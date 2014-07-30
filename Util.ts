@@ -9,13 +9,18 @@
     }
   }
 
+  export class Line {
+    constructor(public index: number, public text: string) {
+    }
+  }
+
   /**
    * Holds the position of content within a string
    */
   export class StringPosition {
     public length: number;
 
-    constructor(public start: number, public end: number) {
+    constructor(public start: number, public end: number, public line: Line) {
       this.length = end - start;
     }
   }
@@ -25,8 +30,8 @@
    * that is found between those positions
    */
   export class TextAndPosition extends StringPosition {
-    constructor(public start: number, public text: string) {
-      super(start, start + text.length);
+    constructor(public start: number, public text: string, line: Line) {
+      super(start, start + text.length, line);
     }
 
     public toJSON(): string {
@@ -43,12 +48,14 @@
     results: string[];
     lastPosition: number;
     currentResultIndex: number;
+    line: Line;
 
-    public tryMatch(regex: RegExp, line: string): boolean {
+    public tryMatch(regex: RegExp, text: string, line: Line): boolean {
       this.regex = regex;
-      this.results = line.match(regex);
+      this.results = text.match(regex);
       this.lastPosition = 0;
       this.currentResultIndex = 1;
+      this.line = line;
 
       return this.results != null;
     }
@@ -59,7 +66,7 @@
       this.lastPosition += result.length;
       this.currentResultIndex++;
 
-      return new TextAndPosition(start, result);
+      return new TextAndPosition(start, result, this.line);
     }
   }
 
@@ -102,18 +109,18 @@
     /**
      * Create a block that represents a block of all whitespace
      */
-    public static createEmpty(line) : LineBlock  {
+    public static createEmpty(line: Line) : LineBlock  {
       return new LineBlock(LineBlockType.Blank, {
-        content: new TextAndPosition(0, line)
+        content: new TextAndPosition(0, line.text, line)
       });
     }
 
     /**
      * Create a block that represents a line that consists of plain text
      */
-    public static createText(line) : LineBlock {
+    public static createText(line: Line) : LineBlock {
       return new LineBlock(LineBlockType.Text, {
-        content: new TextAndPosition(0, line)
+        content: new TextAndPosition(0, line.text, line)
       });
     }
   }
