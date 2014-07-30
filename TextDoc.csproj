@@ -24,7 +24,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="app.ts" />
     <TypeScriptCompile Include="InlineParser.ts" />
-    <TypeScriptCompile Include="LineTokenizer.ts" />
+    <TypeScriptCompile Include="LineParser.ts" />
     <TypeScriptCompile Include="Util.ts" />
   </ItemGroup>
   <ItemGroup>
