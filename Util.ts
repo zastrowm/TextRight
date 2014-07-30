@@ -9,11 +9,6 @@
     }
   }
 
-  export class Line {
-    constructor(public index: number, public text: string) {
-    }
-  }
-
   /**
    * Holds the position of content within a string
    */
@@ -70,58 +65,70 @@
     }
   }
 
-  /**
-   * Indicates the type of block that a line represents
-   */
-  export enum LineBlockType {
-    Heading,
-    Style,
-    Quote,
-    Blank,
-    Text,
-    TextContinuation,
-    UnorderedListItem,
-    OrderedListItem,
-    ListItemContinuation,
-    HtmlTagStart,
-    HtmlContinuation,
-    HtmlTagEnd,
-  }
+  export class LineSearcher {
+    private currentPosition: number;
+    private end: number;
+    private cached: string;
+    private line: string;
 
-  /**
-   * Represents the data that is associated with each node
-   */
-  export interface ILineBlockData {
-    content: TextAndPosition;
-  }
+    constructor(line: string, position: number = 0, end: number = line.length) {
+      this.line = line;
+      this.currentPosition = position;
+      this.end = end;
 
-  /**
-   * Contains the representation of each line that is parsed
-   */
-  export class LineBlock {
-    /**
-     * @param type the type of block that was parsed
-     * @param data the data associated with the block
-     */
-    constructor(public type: LineBlockType, public data: ILineBlockData) {
+      this.cache();
     }
 
-    /**
-     * Create a block that represents a block of all whitespace
-     */
-    public static createEmpty(line: Line) : LineBlock  {
-      return new LineBlock(LineBlockType.Blank, {
-        content: new TextAndPosition(0, line.text, line)
-      });
+    public get isValid() {
+      return this.currentPosition < this.end;
     }
 
-    /**
-     * Create a block that represents a line that consists of plain text
-     */
-    public static createText(line: Line) : LineBlock {
-      return new LineBlock(LineBlockType.Text, {
-        content: new TextAndPosition(0, line.text, line)
-      });
+    public get current() {
+      return this.cached;
+    }
+
+    private cache() {
+      if (this.isValid) {
+        this.cached = this.line[this.currentPosition];
+      } else {
+        this.cached = null;
+      }
+    }
+
+    public skipWhitespace(): boolean {
+      var consumed = 0;
+
+      while (this.isValid && (this.cached == ' ' || this.cached == '\t')) {
+        consumed++;
+        this.skip();
+      }
+
+      return consumed > 0;
+    }
+
+    public read(regex: RegExp): string[] {
+      if (!this.isValid) {
+        return null;
+      }
+
+      var partial = this.line.slice(this.currentPosition, this.end - this.currentPosition);
+      var match = partial.match(regex);
+
+      if (match === null) {
+        return null;
+      }
+
+      this.currentPosition += match[0].length;
+      return match;
+    }
+
+    public skip(): void {
+      if (!this.isValid) {
+        return;
+      }
+
+      this.currentPosition++;
+      this.cache();
     }
   }
 }

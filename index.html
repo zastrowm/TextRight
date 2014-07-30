@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <title>TypeScript HTML App</title>
     <link rel="stylesheet" href="app.css" type="text/css" />
+    <script src="LineParser.js"></script>
     <script src="InlineParser.js"></script>
     <script src="Util.js"></script>
     <script src="app.js"></script>
@@ -58,14 +59,18 @@ start with a space
       .textContent
       .replace('!!data!!', "<data>")
       .replace("!!-data!!", "</data>")
-      .split('\n');
+      .split('\n')
+      .map(function(l, i) { return new TextRight.Line(i, l); });
 
-    var result = TextRight.parse(lines);
+    console.log(lines);
+
+    var lineParser = new TextRight.LineParser();
+    var result = lineParser.parse(lines);
     document.getElementById('text').textContent = JSON.stringify(
       result,
       function (key, value) {
         if (key == "type") {
-          return TextRight.LineBlockType[value].toString();
+          return TextRight.ParsedLineType[value].toString();
         }
 
         return value;
