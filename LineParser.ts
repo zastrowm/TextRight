@@ -218,6 +218,16 @@
       };
 
       state.lastLineWasBlank = false;
+      // TODO currently this spacing is off.  It needs to be discussed how much you
+      // must indent the next line.  It should take into account what all of
+      // the following mean:
+      // 100. Item 1
+      //   1. Item 2?
+      //    1. Another list?
+      //     1. How about now?
+      //        1. Or now?
+      //    1. And what should this be?
+      //  1. or this?
       state.listContinuationSpace = ulData.prefixWhitespace.length
       + ulData.prefixContentWhitespace.length;
       state.continuationMode = LineParserStateContinuationMode.List;
