@@ -23,6 +23,9 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="app.ts" />
+    <TypeScriptCompile Include="InlineParser.ts" />
+    <TypeScriptCompile Include="LineTokenizer.ts" />
+    <TypeScriptCompile Include="Util.ts" />
   </ItemGroup>
   <ItemGroup>
     <None Include="web.Debug.config">

@@ -18,7 +18,7 @@
     }
   }
 
-  function isEmpty(line) {
+  function isEmpty(line: string) {
     return line.match(/^[ \t]*$/);
   }
 
@@ -43,10 +43,10 @@
   }
 
   /** Parse a line into a block header, or return null */
-  function parseBlockHeader(line: string): LineBlock {
+  function parseBlockHeader(line: Line): LineBlock {
     var matcher = new RegexMatchIterator();
 
-    if (!matcher.tryMatch(/^(#+)([ \t]*)(.*)$/, line))
+    if (!matcher.tryMatch(/^(#+)([ \t]*)(.*)$/, line.text, line))
       return null;
 
     var data: IBlockHeader = {
@@ -72,10 +72,10 @@
   /**
    * Attempts to parse a style block out of a line
    */
-  function parseBlockStyle(line: string): LineBlock {
+  function parseBlockStyle(line: Line): LineBlock {
     var matcher = new RegexMatchIterator();
 
-    if (!matcher.tryMatch(/^(---)([ \t]*)(.*)([ \t]*)(---)$/, line))
+    if (!matcher.tryMatch(/^(---)([ \t]*)(.*)([ \t]*)(---)$/, line.text, line))
       return null;
 
     var data: IStyleBlock = {
@@ -96,10 +96,10 @@
     quoteCharacter: TextAndPosition;
   }
 
-  function parseBlockQuote(line): LineBlock {
+  function parseBlockQuote(line: Line): LineBlock {
     var matcher = new RegexMatchIterator();
 
-    if (!matcher.tryMatch(/^( ?)(>)( ?)(.*)$/, line))
+    if (!matcher.tryMatch(/^( ?)(>)( ?)(.*)$/, line.text, line))
       return null;
 
     var data: IBlockQuote = {
@@ -125,10 +125,10 @@
     listPeriod: TextAndPosition;
   }
 
-  function parseBlockListStart(line, state: State): LineBlock {
+  function parseBlockListStart(line: Line, state: State): LineBlock {
     var matcher = new RegexMatchIterator();
 
-    if (matcher.tryMatch(/^( ?)([\-\*\+])( )(.*)$/, line)) {
+    if (matcher.tryMatch(/^( ?)([\-\*\+])( )(.*)$/, line.text, line)) {
       var ulData: IBlockUnorderedListStart = {
         listPrefix: matcher.nextPosition(),
         listSymbol: matcher.nextPosition(),
@@ -142,8 +142,8 @@
       state.continuationMode = StateContinuationMode.List;
 
       return new LineBlock(LineBlockType.UnorderedListItem, ulData);
-    } else if (line[0] === ' '
-                && matcher.tryMatch(/^( ?)([0-9]+|#)(\.)( )(.*)$/, line)) {
+    } else if (line.text[0] === ' '
+      && matcher.tryMatch(/^( ?)([0-9]+|#)(\.)( )(.*)$/, line.text, line)) {
       var olData: IBlockOrderedListStart = {
         listPrefix: matcher.nextPosition(),
         listSymbol: matcher.nextPosition(),
@@ -169,8 +169,8 @@
     listPrefix: TextAndPosition;
   }
 
-  function parseListBlockContinuation(line: string, state: State): LineBlock {
-    var isLineEmpty = isEmpty(line);
+  function parseListBlockContinuation(line: Line, state: State): LineBlock {
+    var isLineEmpty = isEmpty(line.text);
 
     if (isLineEmpty && state.lastLineWasBlank) {
       // end of list
@@ -179,12 +179,15 @@
       state.lastLineWasBlank = true;
 
       return LineBlock.createEmpty(line);
-    } else if (line.length > state.listContinuationSpace + 1) {
-      var prefix = line.substr(0, state.listContinuationSpace + 1);
+    } else if (line.text.length > state.listContinuationSpace + 1) {
+      var prefix = line.text.substr(0, state.listContinuationSpace + 1);
       if (isEmpty(prefix)) {
         var data: IBlockListContinuation = {
-          listPrefix: new TextAndPosition(0, prefix),
-          content: new TextAndPosition(prefix.length, line.substr(prefix.length))
+          listPrefix: new TextAndPosition(0, prefix, line),
+          content: new TextAndPosition(
+            prefix.length,
+            line.text.substr(prefix.length),
+            line)
         };
 
         return new LineBlock(LineBlockType.ListItemContinuation, data);
@@ -195,8 +198,8 @@
     return null;
   }
 
-  function parseBlockTextContinuation(line: String, state: State): LineBlock {
-    if (isEmpty(line)) {
+  function parseBlockTextContinuation(line: Line, state: State): LineBlock {
+    if (isEmpty(line.text)) {
       state.continuationMode = StateContinuationMode.None;
       state.lastLineWasBlank = true;
       return LineBlock.createEmpty(line);
@@ -290,13 +293,11 @@
     tagEnd: TextAndPosition;
   }
 
-  function parseBlockHtmlStart(line: string, state: State): LineBlock {
+  function parseBlockHtmlStart(line: Line, state: State): LineBlock {
     var matcher = new RegexMatchIterator();
 
     // TODO parse attributes
-    if (!matcher.tryMatch(
-      /^(<)([a-z\+]*)(.*?)([ \t]*)(>)$/i,
-      line)) {
+    if (!matcher.tryMatch(/^(<)([a-z\+]*)(.*?)([ \t]*)(>)$/i,line.text, line)) {
       return null;
     }
 
@@ -313,7 +314,7 @@
     state.continuationMode = StateContinuationMode.Html;
 
     var data: IBlockHtmlData = {
-      content: new TextAndPosition(0, line),
+      content: new TextAndPosition(0, line.text, line),
       tagName: fakeData.tagName
     };
 
@@ -328,12 +329,12 @@
     eolWhitespace: TextAndPosition;
   }
 
-  function parseHtmlBlockContinuation(line: string, state: State): LineBlock {
+  function parseHtmlBlockContinuation(line: Line, state: State): LineBlock {
     var matcher = new RegexMatchIterator();
 
-    if (!matcher.tryMatch(/^(<\/)([a-z\-]+)([ \t]*)(>)([ \t]*)$/i, line)) {
+    if (!matcher.tryMatch(/^(<\/)([a-z\-]+)([ \t]*)(>)([ \t]*)$/i, line.text, line)) {
       var textContent: ILineBlockData = {
-        content: new TextAndPosition(0, line)
+        content: new TextAndPosition(0, line.text, line)
       };
 
       state.continuationMode = StateContinuationMode.Html;
@@ -347,7 +348,7 @@
       preCloseWhitespace: matcher.nextPosition(),
       endTag: matcher.nextPosition(),
       eolWhitespace: matcher.nextPosition(),
-      content: new TextAndPosition(0, line),
+      content: new TextAndPosition(0, line.text, line),
     };
 
     state.continuationMode = StateContinuationMode.None;
@@ -356,7 +357,7 @@
     return new LineBlock(LineBlockType.HtmlTagEnd, data);
   }
 
-  function parseLine(line: string, state: State, options: Options): LineBlock {
+  function parseLine(line: Line, state: State, options: Options): LineBlock {
     var block: LineBlock;
 
     if (state.continuationMode === StateContinuationMode.Text) {
@@ -402,7 +403,7 @@
       return block;
     }
 
-    if (isEmpty(line)) {
+    if (isEmpty(line.text)) {
       state.lastLineWasBlank = true;
       return LineBlock.createEmpty(line);
     }
@@ -422,7 +423,7 @@
 
     for (var i: number = 0; i < lines.length; i++) {
       var line = lines[i];
-      var block: LineBlock = parseLine(line, state, options);
+      var block: LineBlock = parseLine(new Line(i, line), state, options);
       blocks.push(block);
     }
 
