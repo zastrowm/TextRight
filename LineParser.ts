@@ -54,9 +54,9 @@
     UnorderedListItem,
     OrderedListItem,
     ListItemContinuation,
-    HtmlTagStart,
-    HtmlContinuation,
-    HtmlTagEnd,
+    XmlTagStart,
+    XmlContinuation,
+    XmlTagEnd,
   }
 
   /** A line which contains data.  All I_Line interfaces should actually have content.*/
@@ -71,7 +71,7 @@
     public subState: LineParserState;
     public continuationMode: LineParserStateContinuationMode;
     public lastLineWasBlank: boolean;
-    public openHtmlTag: string;
+    public openXmlTag: string;
     /** The amount of space needed to continue a list item */
     public listContinuationSpace: number;
 
@@ -97,8 +97,8 @@
     List,
     /* As text, if possible */
     Text,
-    /* As html, if possible */
-    Html,
+    /* As xml, if possible */
+    Xml,
   }
 
   /** A block that looks like '## This is a header' */
@@ -305,17 +305,17 @@
     }
   }
 
-  /** A line which represents the start of a html */
-  export interface IHtmlStartTagLine  {
-    /* The content of the html line */
+  /** A line which represents the start of an xml block */
+  export interface IXmlStartTagLine  {
+    /* The content of the xml line */
     content: TextAndPosition;
 
     /* The tag used to create the tag */
     tagName: TextAndPosition;
   }
 
-  /** Represents the start of an html block. TODO start using instead of IHtmlStartTagLine */
-  export interface IHtmlData{
+  /** Represents the start of an xml block. TODO start using instead of IXmlStartTagLine */
+  export interface IXmlData {
     content: TextAndPosition
     tagStart: TextAndPosition;
     tagName: TextAndPosition;
@@ -324,8 +324,8 @@
     tagEnd: TextAndPosition;
   }
 
-  /** Convert a line into a html start tag*/
-  function parseBlockHtmlStart(line: Line, state: LineParserState): ParsedLine {
+  /** Convert a line into a xml start tag*/
+  function parseBlockXmlStart(line: Line, state: LineParserState): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     // TODO parse attributes
@@ -333,7 +333,7 @@
       return null;
     }
 
-    var fakeData: IHtmlData = {
+    var fakeData: IXmlData = {
       tagStart: matcher.nextPosition(),
       tagName: matcher.nextPosition(),
       attributeData: matcher.nextPosition(),
@@ -342,22 +342,22 @@
       content: null,
     };
 
-    state.openHtmlTag = fakeData.tagStart.text;
-    state.continuationMode = LineParserStateContinuationMode.Html;
+    state.openXmlTag = fakeData.tagStart.text;
+    state.continuationMode = LineParserStateContinuationMode.Xml;
 
-    var data: IHtmlStartTagLine = {
+    var data: IXmlStartTagLine = {
       content: new TextAndPosition(0, line.text, line),
       tagName: fakeData.tagName
     };
 
-    return new ParsedLine(ParsedLineType.HtmlTagStart, data);
+    return new ParsedLine(ParsedLineType.XmlTagStart, data);
   }
 
-  /** A line which represents the closing tag of an html block */
-  export interface IHtmlEndTagLine  {
+  /** A line which represents the closing tag of an xml block */
+  export interface IXmlEndTagLine  {
     /* Should always be '</' */
     prefix: TextAndPosition;
-    /* The tag that closed the html block*/
+    /* The tag that closed the xml block*/
     tagName: TextAndPosition;
     /* The whitespace between the tagName and the postfix */
     tagNamePostfixWhitespace: TextAndPosition;
@@ -370,8 +370,8 @@
     content: TextAndPosition;
   }
 
-  /** Parse a line into the end of a html block */
-  function parseHtmlBlockContinuation(line: Line, state: LineParserState): ParsedLine {
+  /** Parse a line into the end of a xml block */
+  function parseXmlBlockContinuation(line: Line, state: LineParserState): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     if (!matcher.tryMatch(/^(<\/)([a-z\-]+)([ \t]*)(>)([ \t]*)$/i, line.text, line)) {
@@ -379,12 +379,12 @@
         content: new TextAndPosition(0, line.text, line)
       };
 
-      state.continuationMode = LineParserStateContinuationMode.Html;
+      state.continuationMode = LineParserStateContinuationMode.Xml;
 
-      return new ParsedLine(ParsedLineType.HtmlContinuation, textContent);
+      return new ParsedLine(ParsedLineType.XmlContinuation, textContent);
     }
 
-    var data: IHtmlEndTagLine = {
+    var data: IXmlEndTagLine = {
       prefix: matcher.nextPosition(),
       tagName: matcher.nextPosition(),
       tagNamePostfixWhitespace: matcher.nextPosition(),
@@ -394,9 +394,9 @@
     };
 
     state.continuationMode = LineParserStateContinuationMode.None;
-    state.openHtmlTag = null;
+    state.openXmlTag = null;
 
-    return new ParsedLine(ParsedLineType.HtmlTagEnd, data);
+    return new ParsedLine(ParsedLineType.XmlTagEnd, data);
   }
 
   /** Parse a single line into node. */
@@ -412,8 +412,8 @@
       }
 
       return parseBlockTextContinuation(line, state);
-    } else if (state.continuationMode == LineParserStateContinuationMode.Html) {
-      return parseHtmlBlockContinuation(line, state);
+    } else if (state.continuationMode == LineParserStateContinuationMode.Xml) {
+      return parseXmlBlockContinuation(line, state);
     } else if (state.continuationMode === LineParserStateContinuationMode.List) {
       var result = parseListBlockContinuation(line, state);
       if (result !== null) {
@@ -441,7 +441,7 @@
       return block;
     }
 
-    if ((block = parseBlockHtmlStart(line, state)) !== null) {
+    if ((block = parseBlockXmlStart(line, state)) !== null) {
       state.lastLineWasBlank = false;
       return block;
     }
