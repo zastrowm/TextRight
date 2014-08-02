@@ -10,6 +10,30 @@
   }
 
   /**
+   * Represents a single line of text that needs to be parsed.
+   */
+  export class Line {
+    /**
+     * @param line the index of the line that the text represents.
+     * @param text the actual text for the line.
+     */
+    constructor(public index: number, public text: string) {
+    }
+
+    public getFragment(start: number, end: number = this.text.length): LineFragment {
+      return new LineFragment(this, start, end);
+    }
+
+    public getFragmentToEnd(start: number): LineFragment {
+      return this.getFragment(start, this.text.length);
+    }
+
+    public getLineFragment(): LineFragment {
+      return new LineFragment(this, 0, this.text.length);
+    }
+  }
+
+  /**
    * Holds the position of content within a string
    */
   export class LineFragment {
@@ -25,10 +49,6 @@
 
     public getText() {
       return this.line.text.substring(this.start, this.end);
-    }
-
-    public static fromText(start: number, text: string, line: Line) {
-      return new LineFragment(line, start, start + text.length);
     }
   }
 
@@ -59,7 +79,7 @@
       this.lastPosition += result.length;
       this.currentResultIndex++;
 
-      return LineFragment.fromText(start, result, this.line);
+      return this.line.getFragment(start, start + result.length);
     }
   }
 
