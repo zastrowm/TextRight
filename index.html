@@ -6,6 +6,7 @@
     <title>TypeScript HTML App</title>
     <link rel="stylesheet" href="app.css" type="text/css" />
     <script src="LineParser.js"></script>
+    <script src="BlockParser.js"></script>
     <script src="InlineParser.js"></script>
     <script src="Util.js"></script>
     <script src="app.js"></script>
@@ -62,15 +63,19 @@ start with a space
       .split('\n')
       .map(function(l, i) { return new TextRight.Line(i, l); });
 
-    console.log(lines);
-
     var lineParser = new TextRight.LineParser();
-    var result = lineParser.parse(lines);
+    var blockParser = new TextRight.BlockParser();
+    var parsedLines = lineParser.parse(lines);
+    var blocks = blockParser.parse(parsedLines);
+
+    console.log(lines);
+    console.log(blocks);
+
     document.getElementById('text').textContent = JSON.stringify(
-      result,
+      blocks,
       function (key, value) {
-        if (key == "type") {
-          return TextRight.ParsedLineType[value].toString();
+        if (key == "blockType") {
+          return TextRight.BlockType[value].toString();
         }
 
         return value;
