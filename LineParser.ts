@@ -1,25 +1,5 @@
 ﻿module TextRight {
   /**
-    * Represents a single line of text that needs to be parsed.
-    */
-  export class Line {
-    /**
-     * @param line the index of the line that the text represents.
-     * @param text the actual text for the line.
-     */
-    constructor(public index: number, public text: string) {
-    }
-
-    public getFragment(start: number, end: number): LineFragment {
-      return new LineFragment(this, start, end);
-    }
-
-    public getLineFragment(): LineFragment {
-      return new LineFragment(this, 0, this.text.length);
-    }
-  }
-
-  /**
    * Contains the representation of each line that is parsed
    */
   export class ParsedLine {
@@ -285,11 +265,8 @@
       var prefix = line.text.substr(0, state.listContinuationSpace + 1);
       if (isEmpty(prefix)) {
         var data: IListItemContinuationLine = {
-          contentWhitespace: LineFragment.fromText(0, prefix, line),
-          content: LineFragment.fromText(
-            prefix.length,
-            line.text.substr(prefix.length),
-            line)
+          contentWhitespace: line.getFragment(0, prefix.length),
+          content: line.getFragmentToEnd(prefix.length)
         };
 
         return new ParsedLine(ParsedLineType.ListItemContinuation, data);
@@ -354,7 +331,7 @@
     state.continuationMode = LineParserStateContinuationMode.Xml;
 
     var data: IXmlStartTagLine = {
-      content: LineFragment.fromText(0, line.text, line),
+      content: line.getLineFragment(),
       tagName: fakeData.tagName
     };
 
@@ -384,7 +361,7 @@
 
     if (!matcher.tryMatch(/^(<\/)([a-z\-]+)([ \t]*)(>)([ \t]*)$/i, line.text, line)) {
       var textContent: IContentLine = {
-        content: LineFragment.fromText(0, line.text, line)
+        content: line.getLineFragment(),
       };
 
       state.continuationMode = LineParserStateContinuationMode.Xml;
@@ -398,7 +375,7 @@
       tagNamePostfixWhitespace: matcher.nextPosition(),
       postfix: matcher.nextPosition(),
       eolWhitespace: matcher.nextPosition(),
-      content: LineFragment.fromText(0, line.text, line),
+      content: line.getLineFragment(),
     };
 
     state.continuationMode = LineParserStateContinuationMode.None;
