@@ -19,4 +19,12 @@
       this.type = type;
     }
   }
+
+  export class InlineParser {
+    constructor(private options: Options = new Options()) {
+    }
+
+    public parse(block: Block) {
+    }
+  }
 }

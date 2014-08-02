@@ -75,11 +75,11 @@
 
     if (isOrdered) {
       var orderedData = (<IOrderedListItemLine>line.data);
-      prefix = orderedData.prefix.getText();
+      prefix = orderedData.prefix.text;
       fragment = orderedData.content;
     } else {
       var unorderedData = (<IUnorderdListItemLine>line.data);
-      prefix = unorderedData.prefix.getText();
+      prefix = unorderedData.prefix.text;
       fragment = unorderedData.content;
     }
 
@@ -145,7 +145,7 @@
     }
 
     var data: IRawBlock = {
-      tagName: xmlLine.tagName.getText(),
+      tagName: xmlLine.tagName.text,
       lines: lines,
       innerContent: innerContent,
       isClosed: isClosed
@@ -196,7 +196,7 @@
     var style = <IStyleLine>iterator.current.data;
 
     var data: IStyleBlock = {
-      content: style.content.getText(),
+      content: style.content.text,
       line: iterator.current
     }
 

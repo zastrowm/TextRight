@@ -9,23 +9,48 @@
     }
   }
 
+  export interface ILine {
+    index: number;
+
+    text: string;
+
+    length: number;
+
+    getFragment(start: number, end: number): LineFragment;
+
+    getLineFragment(): LineFragment;
+  }
+
   /**
    * Represents a single line of text that needs to be parsed.
    */
-  export class Line {
+  export class Line implements ILine {
+    private _text: string;
+    private _index: number;
+
     /**
      * @param line the index of the line that the text represents.
      * @param text the actual text for the line.
      */
-    constructor(public index: number, public text: string) {
+    constructor(index: number, text: string) {
+      this._index = index;
+      this._text = text;
+    }
+
+    public get text() {
+      return this._text;
+    }
+
+    public get index() {
+      return this._index;
+    }
+
+    public get length() {
+      return this.text.length;
     }
 
     public getFragment(start: number, end: number = this.text.length): LineFragment {
       return new LineFragment(this, start, end);
-    }
-
-    public getFragmentToEnd(start: number): LineFragment {
-      return this.getFragment(start, this.text.length);
     }
 
     public getLineFragment(): LineFragment {
@@ -36,19 +61,34 @@
   /**
    * Holds the position of content within a string
    */
-  export class LineFragment {
-    public length: number;
+  export class LineFragment implements ILine {
+    private cachedLine: string;
 
-    constructor(public line: Line, public start: number, public end: number) {
-      this.length = end - start;
+    constructor(public line: ILine, public start: number, public end: number) {
     }
 
-    public toJSON(): string {
-      return this.getText();
+    public get length() {
+      return this.end - this.start;
     }
 
-    public getText() {
-      return this.line.text.substring(this.start, this.end);
+    public get index() {
+      return this.line.index;
+    }
+
+    public get text(): string {
+      if (this.cachedLine == null) {
+        this.cachedLine = this.line.text.substring(this.start, this.end);
+      }
+
+      return this.cachedLine;
+    }
+
+    public getFragment(start: number, end: number = this.text.length): LineFragment {
+      return new LineFragment(this.line, this.start + start, this.end + end);
+    }
+
+    public getLineFragment(): LineFragment {
+      return new LineFragment(this.line, this.start, this.end);
     }
   }
 
@@ -61,9 +101,9 @@
     results: string[];
     lastPosition: number;
     currentResultIndex: number;
-    line: Line;
+    line: ILine;
 
-    public tryMatch(regex: RegExp, text: string, line: Line): boolean {
+    public tryMatch(regex: RegExp, text: string, line: ILine): boolean {
       this.regex = regex;
       this.results = text.match(regex);
       this.lastPosition = 0;

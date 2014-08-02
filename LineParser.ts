@@ -13,7 +13,7 @@
     /**
      * Create a block that represents a block of all whitespace
      */
-    public static createEmpty(line: Line): ParsedLine {
+    public static createEmpty(line: ILine): ParsedLine {
       return new ParsedLine(ParsedLineType.Blank, {
         content: line.getLineFragment()
       });
@@ -22,7 +22,7 @@
     /**
      * Create a block that represents a line that consists of plain text
      */
-    public static createText(line: Line): ParsedLine {
+    public static createText(line: ILine): ParsedLine {
       return new ParsedLine(ParsedLineType.Text, {
         content: line.getLineFragment()
       });
@@ -102,7 +102,7 @@
   }
 
   /** Parse a line into a header, or return null */
-  function parseBlockHeader(line: Line): ParsedLine {
+  function parseBlockHeader(line: ILine): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     if (!matcher.tryMatch(/^(#+)([ \t]*)(.*)$/, line.text, line))
@@ -132,7 +132,7 @@
   }
 
   /** Convert a line into a style line */
-  function parseBlockStyle(line: Line): ParsedLine {
+  function parseBlockStyle(line: ILine): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     if (!matcher.tryMatch(/^(---)([ \t]*)(.*)([ \t]*)(---)$/, line.text, line))
@@ -162,7 +162,7 @@
   }
 
   /** Convert a line into a block quote line */
-  function parseBlockQuote(line: Line): ParsedLine {
+  function parseBlockQuote(line: ILine): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     if (!matcher.tryMatch(/^( ?)(>)( ?)(.*)$/, line.text, line))
@@ -197,7 +197,7 @@
   }
 
   /** Convert a line into either an IUnorderdListItemLine or IOrderedListItemLine */
-  function parseBlockListStart(line: Line, state: LineParserState): ParsedLine {
+  function parseBlockListStart(line: ILine, state: LineParserState): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     if (matcher.tryMatch(/^( ?)([\-\*\+])( )(.*)$/, line.text, line)) {
@@ -254,7 +254,7 @@
   }
 
   /** Parse a line into an IListItemContinuationLine */
-  function parseListBlockContinuation(line: Line, state: LineParserState): ParsedLine {
+  function parseListBlockContinuation(line: ILine, state: LineParserState): ParsedLine {
     var isLineEmpty = isEmpty(line.text);
 
     if (isLineEmpty && state.lastLineWasBlank) {
@@ -269,7 +269,7 @@
       if (isEmpty(prefix)) {
         var data: IListItemContinuationLine = {
           contentWhitespace: line.getFragment(0, prefix.length),
-          content: line.getFragmentToEnd(prefix.length)
+          content: line.getFragment(prefix.length, line.length)
         };
 
         return new ParsedLine(ParsedLineType.ListItemContinuation, data);
@@ -281,7 +281,7 @@
   }
 
   /** Parse a line into a text block continued from the previous line*/
-  function parseBlockTextContinuation(line: Line, state: LineParserState): ParsedLine {
+  function parseBlockTextContinuation(line: ILine, state: LineParserState): ParsedLine {
     if (isEmpty(line.text)) {
       state.continuationMode = LineParserStateContinuationMode.None;
       state.lastLineWasBlank = true;
@@ -313,7 +313,7 @@
   }
 
   /** Convert a line into a raw/xml start tag*/
-  function parseBlockRawStart(line: Line, state: LineParserState): ParsedLine {
+  function parseBlockRawStart(line: ILine, state: LineParserState): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     // TODO parse attributes
@@ -330,7 +330,7 @@
       content: null,
     };
 
-    state.openXmlTag = fakeData.tagStart.getText();
+    state.openXmlTag = fakeData.tagStart.text;
     state.continuationMode = LineParserStateContinuationMode.Raw;
 
     var data: IRawStartTagLine = {
@@ -359,7 +359,7 @@
   }
 
   /** Parse a line into the end of a raw/xml block */
-  function parseRawBlockContinuation(line: Line, state: LineParserState): ParsedLine {
+  function parseRawBlockContinuation(line: ILine, state: LineParserState): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     if (!matcher.tryMatch(/^(<\/)([a-z\-]+)([ \t]*)(>)([ \t]*)$/i, line.text, line)) {
@@ -388,7 +388,7 @@
   }
 
   /** Parse a single line into node. */
-  function parseLine(line: Line, state: LineParserState, options: Options): ParsedLine {
+  function parseLine(line: ILine, state: LineParserState, options: Options): ParsedLine {
     var block: ParsedLine;
 
     if (state.continuationMode === LineParserStateContinuationMode.Text) {
@@ -450,13 +450,13 @@
     }
 
     /** Parse a series of lines into line nodes. */
-    public parse(lines: Line[]): ParsedLine[] {
+    public parse(lines: ILine[]): ParsedLine[] {
       var state = new LineParserState();
       return lines.map(l => this.parseLine(l, state));
     }
 
     /** Parse a single line into a series of ParsedLine */
-    public parseLine(line: Line, state: LineParserState): ParsedLine {
+    public parseLine(line: ILine, state: LineParserState): ParsedLine {
       return parseLine(line, state, this.options);
     }
   }
