@@ -7,7 +7,7 @@
      * @param type the type of block that was parsed
      * @param data the data associated with the block
      */
-    constructor(public type: ParsedLineType, public data: any) {
+    constructor(public lineType: ParsedLineType, public data: any) {
     }
 
     /**
@@ -42,9 +42,9 @@
     UnorderedListItem,
     OrderedListItem,
     ListItemContinuation,
-    XmlTagStart,
-    XmlContinuation,
-    XmlTagEnd,
+    RawTagStart,
+    RawContinuation,
+    RawTagEnd,
   }
 
   /** A line which contains data.  All I_Line interfaces should actually have content.*/
@@ -85,8 +85,8 @@
     List,
     /* As text, if possible */
     Text,
-    /* As xml, if possible */
-    Xml,
+    /* As a continuation of xml/raw data, if possible */
+    Raw,
   }
 
   /** A block that looks like '## This is a header' */
@@ -155,6 +155,8 @@
     prefixWhitespace: LineFragment;
     /* The quote character */
     prefix: LineFragment;
+    /* Whitespace between the content and the whitespace */
+    prefixContentWhitespace
     /* The textual content of the quote */
     content: LineFragment;
   }
@@ -169,6 +171,7 @@
     var data: IQuoteLine = {
       prefixWhitespace: matcher.nextPosition(),
       prefix: matcher.nextPosition(),
+      prefixContentWhitespace: matcher.nextPosition(),
       content: matcher.nextPosition()
     };
 
@@ -291,7 +294,7 @@
   }
 
   /** A line which represents the start of an xml block */
-  export interface IXmlStartTagLine  {
+  export interface IRawStartTagLine  {
     /* The content of the xml line */
     content: LineFragment;
 
@@ -299,8 +302,8 @@
     tagName: LineFragment;
   }
 
-  /** Represents the start of an xml block. TODO start using instead of IXmlStartTagLine */
-  export interface IXmlData {
+  /** Represents the start of an xml block. TODO start using instead of IRawStartTagLine */
+  export interface IRawData {
     content: LineFragment
     tagStart: LineFragment;
     tagName: LineFragment;
@@ -309,8 +312,8 @@
     tagEnd: LineFragment;
   }
 
-  /** Convert a line into a xml start tag*/
-  function parseBlockXmlStart(line: Line, state: LineParserState): ParsedLine {
+  /** Convert a line into a raw/xml start tag*/
+  function parseBlockRawStart(line: Line, state: LineParserState): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     // TODO parse attributes
@@ -318,7 +321,7 @@
       return null;
     }
 
-    var fakeData: IXmlData = {
+    var fakeData: IRawData = {
       tagStart: matcher.nextPosition(),
       tagName: matcher.nextPosition(),
       attributeData: matcher.nextPosition(),
@@ -328,18 +331,18 @@
     };
 
     state.openXmlTag = fakeData.tagStart.getText();
-    state.continuationMode = LineParserStateContinuationMode.Xml;
+    state.continuationMode = LineParserStateContinuationMode.Raw;
 
-    var data: IXmlStartTagLine = {
+    var data: IRawStartTagLine = {
       content: line.getLineFragment(),
       tagName: fakeData.tagName
     };
 
-    return new ParsedLine(ParsedLineType.XmlTagStart, data);
+    return new ParsedLine(ParsedLineType.RawTagStart, data);
   }
 
-  /** A line which represents the closing tag of an xml block */
-  export interface IXmlEndTagLine  {
+  /** A line which represents the closing tag of an raw/xml block */
+  export interface IRawEndTagLine  {
     /* Should always be '</' */
     prefix: LineFragment;
     /* The tag that closed the xml block*/
@@ -355,8 +358,8 @@
     content: LineFragment;
   }
 
-  /** Parse a line into the end of a xml block */
-  function parseXmlBlockContinuation(line: Line, state: LineParserState): ParsedLine {
+  /** Parse a line into the end of a raw/xml block */
+  function parseRawBlockContinuation(line: Line, state: LineParserState): ParsedLine {
     var matcher = new RegexMatchIterator();
 
     if (!matcher.tryMatch(/^(<\/)([a-z\-]+)([ \t]*)(>)([ \t]*)$/i, line.text, line)) {
@@ -364,12 +367,12 @@
         content: line.getLineFragment(),
       };
 
-      state.continuationMode = LineParserStateContinuationMode.Xml;
+      state.continuationMode = LineParserStateContinuationMode.Raw;
 
-      return new ParsedLine(ParsedLineType.XmlContinuation, textContent);
+      return new ParsedLine(ParsedLineType.RawContinuation, textContent);
     }
 
-    var data: IXmlEndTagLine = {
+    var data: IRawEndTagLine = {
       prefix: matcher.nextPosition(),
       tagName: matcher.nextPosition(),
       tagNamePostfixWhitespace: matcher.nextPosition(),
@@ -381,7 +384,7 @@
     state.continuationMode = LineParserStateContinuationMode.None;
     state.openXmlTag = null;
 
-    return new ParsedLine(ParsedLineType.XmlTagEnd, data);
+    return new ParsedLine(ParsedLineType.RawTagEnd, data);
   }
 
   /** Parse a single line into node. */
@@ -397,8 +400,8 @@
       }
 
       return parseBlockTextContinuation(line, state);
-    } else if (state.continuationMode == LineParserStateContinuationMode.Xml) {
-      return parseXmlBlockContinuation(line, state);
+    } else if (state.continuationMode == LineParserStateContinuationMode.Raw) {
+      return parseRawBlockContinuation(line, state);
     } else if (state.continuationMode === LineParserStateContinuationMode.List) {
       var result = parseListBlockContinuation(line, state);
       if (result !== null) {
@@ -426,7 +429,7 @@
       return block;
     }
 
-    if ((block = parseBlockXmlStart(line, state)) !== null) {
+    if ((block = parseBlockRawStart(line, state)) !== null) {
       state.lastLineWasBlank = false;
       return block;
     }
