@@ -26,6 +26,7 @@
     <TypeScriptCompile Include="BlockParser.ts" />
     <TypeScriptCompile Include="InlineParser.ts" />
     <TypeScriptCompile Include="LineParser.ts" />
+    <TypeScriptCompile Include="NodeParser.ts" />
     <TypeScriptCompile Include="Util.ts" />
   </ItemGroup>
   <ItemGroup>
