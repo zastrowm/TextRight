@@ -1,7 +1,7 @@
 ﻿module TextRight {
   /** Takes a position of content and a line number to be passed between functions */
   export class LineContent {
-    constructor(public text: TextAndPosition, public line: number) {
+    constructor(public text: LineFragment, public line: number) {
     }
   }
 
@@ -31,24 +31,4 @@
       this.type = type;
     }
   }
-
-  //class HeadingNode extends Node {
-  //  /** The line from which the header came. */
-  //  public origin: IHeaderLine;
-
-  //  /** The line number that the header came from. */
-  //  public lineNumber: number;
-
-  //  /** The header-level (1 or more) of the heading */
-  //  public level: number;
-
-  //  constructor(lineBlock: IHeaderLine, lineNumber: number) {
-  //    super(NodeType.Heading);
-
-  //    this.origin = lineBlock;
-  //    this.lineNumber = lineNumber;
-  //  }
-  //}
-
-  //export function parseInlineContent()
 }

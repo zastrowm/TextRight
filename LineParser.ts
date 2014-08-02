@@ -9,6 +9,14 @@
      */
     constructor(public index: number, public text: string) {
     }
+
+    public getFragment(start: number, end: number): LineFragment {
+      return new LineFragment(this, start, end);
+    }
+
+    public getLineFragment(): LineFragment {
+      return new LineFragment(this, 0, this.text.length);
+    }
   }
 
   /**
@@ -27,7 +35,7 @@
      */
     public static createEmpty(line: Line): ParsedLine {
       return new ParsedLine(ParsedLineType.Blank, {
-        content: new TextAndPosition(0, line.text, line)
+        content: line.getLineFragment()
       });
     }
 
@@ -36,7 +44,7 @@
      */
     public static createText(line: Line): ParsedLine {
       return new ParsedLine(ParsedLineType.Text, {
-        content: new TextAndPosition(0, line.text, line)
+        content: line.getLineFragment()
       });
     }
   }
@@ -61,7 +69,7 @@
 
   /** A line which contains data.  All I_Line interfaces should actually have content.*/
   export interface IContentLine {
-    content: TextAndPosition;
+    content: LineFragment;
   }
 
   /**
@@ -102,15 +110,15 @@
   }
 
   /** A block that looks like '## This is a header' */
-  export interface IHeaderLine {
+  export interface IHeadingLine {
     /* The location where the '#' starts */
-    prefix: TextAndPosition;
+    prefix: LineFragment;
 
     /* The spacing between '#' and the text-content */
-    prefixContentWhitespace: TextAndPosition;
+    prefixContentWhitespace: LineFragment;
 
     /* The textual content of the header */
-    content: TextAndPosition;
+    content: LineFragment;
   }
 
   /** Parse a line into a header, or return null */
@@ -120,7 +128,7 @@
     if (!matcher.tryMatch(/^(#+)([ \t]*)(.*)$/, line.text, line))
       return null;
 
-    var data: IHeaderLine = {
+    var data: IHeadingLine = {
       prefix: matcher.nextPosition(),
       prefixContentWhitespace: matcher.nextPosition(),
       content: matcher.nextPosition(),
@@ -132,15 +140,15 @@
   /** A line which provides a style for the next line/block */
   export interface IStyleLine {
     /* The location where the "'''" starts */
-    prefix: TextAndPosition;
+    prefix: LineFragment;
     /* The spacing before the style prefix and the style-content */
-    prefixContentWhitespace: TextAndPosition;
+    prefixContentWhitespace: LineFragment;
     /* The textual content of the style */
-    content: TextAndPosition;
+    content: LineFragment;
     /* The spacing before the style prefix and the style-content */
-    contentPrefixWhitespace: TextAndPosition;
+    contentPrefixWhitespace: LineFragment;
     /* The location where the "'''" starts */
-    postfix: TextAndPosition;
+    postfix: LineFragment;
   }
 
   /** Convert a line into a style line */
@@ -164,11 +172,11 @@
   /** A line which begins a quote */
   export interface IQuoteLine {
     /* The location before the quote */
-    prefixWhitespace: TextAndPosition;
+    prefixWhitespace: LineFragment;
     /* The quote character */
-    prefix: TextAndPosition;
+    prefix: LineFragment;
     /* The textual content of the quote */
-    content: TextAndPosition;
+    content: LineFragment;
   }
 
   /** Convert a line into a block quote line */
@@ -190,19 +198,19 @@
   /** A line which represents the start of an unordered list item */
   export interface IUnorderdListItemLine {
     /* The location before the list */
-    prefixWhitespace: TextAndPosition;
+    prefixWhitespace: LineFragment;
     /* The list character */
-    prefix: TextAndPosition;
+    prefix: LineFragment;
     /* The space before the start of the list */
-    prefixContentWhitespace: TextAndPosition;
+    prefixContentWhitespace: LineFragment;
     /* The textual content of the list item */
-    content: TextAndPosition;
+    content: LineFragment;
   }
 
   /** A line which represents the start of an numeric/ordered list item */
   export interface IOrderedListItemLine extends IUnorderdListItemLine {
     /** The symbol used to separate the prefix from the whitespace */
-    listPeriod: TextAndPosition;
+    listPeriod: LineFragment;
   }
 
   /** Convert a line into either an IUnorderdListItemLine or IOrderedListItemLine */
@@ -257,9 +265,9 @@
   /** A continuation of a list item */
   export interface IListItemContinuationLine  {
     /** The prefix leading up to the content */
-    contentWhitespace: TextAndPosition;
+    contentWhitespace: LineFragment;
     /* The textual content of the list item */
-    content: TextAndPosition;
+    content: LineFragment;
   }
 
   /** Parse a line into an IListItemContinuationLine */
@@ -277,8 +285,8 @@
       var prefix = line.text.substr(0, state.listContinuationSpace + 1);
       if (isEmpty(prefix)) {
         var data: IListItemContinuationLine = {
-          contentWhitespace: new TextAndPosition(0, prefix, line),
-          content: new TextAndPosition(
+          contentWhitespace: LineFragment.fromText(0, prefix, line),
+          content: LineFragment.fromText(
             prefix.length,
             line.text.substr(prefix.length),
             line)
@@ -308,20 +316,20 @@
   /** A line which represents the start of an xml block */
   export interface IXmlStartTagLine  {
     /* The content of the xml line */
-    content: TextAndPosition;
+    content: LineFragment;
 
     /* The tag used to create the tag */
-    tagName: TextAndPosition;
+    tagName: LineFragment;
   }
 
   /** Represents the start of an xml block. TODO start using instead of IXmlStartTagLine */
   export interface IXmlData {
-    content: TextAndPosition
-    tagStart: TextAndPosition;
-    tagName: TextAndPosition;
-    attributeData: TextAndPosition;
-    postAttributeSpace: TextAndPosition;
-    tagEnd: TextAndPosition;
+    content: LineFragment
+    tagStart: LineFragment;
+    tagName: LineFragment;
+    attributeData: LineFragment;
+    postAttributeSpace: LineFragment;
+    tagEnd: LineFragment;
   }
 
   /** Convert a line into a xml start tag*/
@@ -342,11 +350,11 @@
       content: null,
     };
 
-    state.openXmlTag = fakeData.tagStart.text;
+    state.openXmlTag = fakeData.tagStart.getText();
     state.continuationMode = LineParserStateContinuationMode.Xml;
 
     var data: IXmlStartTagLine = {
-      content: new TextAndPosition(0, line.text, line),
+      content: LineFragment.fromText(0, line.text, line),
       tagName: fakeData.tagName
     };
 
@@ -356,18 +364,18 @@
   /** A line which represents the closing tag of an xml block */
   export interface IXmlEndTagLine  {
     /* Should always be '</' */
-    prefix: TextAndPosition;
+    prefix: LineFragment;
     /* The tag that closed the xml block*/
-    tagName: TextAndPosition;
+    tagName: LineFragment;
     /* The whitespace between the tagName and the postfix */
-    tagNamePostfixWhitespace: TextAndPosition;
+    tagNamePostfixWhitespace: LineFragment;
     /* Should always be '>' */
-    postfix: TextAndPosition;
+    postfix: LineFragment;
     /* The whitespace found at the end of the line past the postfix*/
-    eolWhitespace: TextAndPosition;
+    eolWhitespace: LineFragment;
 
     /* The entire line parsed */
-    content: TextAndPosition;
+    content: LineFragment;
   }
 
   /** Parse a line into the end of a xml block */
@@ -376,7 +384,7 @@
 
     if (!matcher.tryMatch(/^(<\/)([a-z\-]+)([ \t]*)(>)([ \t]*)$/i, line.text, line)) {
       var textContent: IContentLine = {
-        content: new TextAndPosition(0, line.text, line)
+        content: LineFragment.fromText(0, line.text, line)
       };
 
       state.continuationMode = LineParserStateContinuationMode.Xml;
@@ -390,7 +398,7 @@
       tagNamePostfixWhitespace: matcher.nextPosition(),
       postfix: matcher.nextPosition(),
       eolWhitespace: matcher.nextPosition(),
-      content: new TextAndPosition(0, line.text, line),
+      content: LineFragment.fromText(0, line.text, line),
     };
 
     state.continuationMode = LineParserStateContinuationMode.None;

@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="app.ts" />
+    <TypeScriptCompile Include="BlockParser.ts" />
     <TypeScriptCompile Include="InlineParser.ts" />
     <TypeScriptCompile Include="LineParser.ts" />
     <TypeScriptCompile Include="Util.ts" />
