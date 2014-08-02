@@ -12,25 +12,23 @@
   /**
    * Holds the position of content within a string
    */
-  export class StringPosition {
+  export class LineFragment {
     public length: number;
 
-    constructor(public start: number, public end: number, public line: Line) {
+    constructor(public line: Line, public start: number, public end: number) {
       this.length = end - start;
-    }
-  }
-
-  /**
-   * Holds the position of a substring within a larger string, and holds the text
-   * that is found between those positions
-   */
-  export class TextAndPosition extends StringPosition {
-    constructor(public start: number, public text: string, line: Line) {
-      super(start, start + text.length, line);
     }
 
     public toJSON(): string {
-      return this.text;
+      return this.getText();
+    }
+
+    public getText() {
+      return this.line.text.substring(this.start, this.end);
+    }
+
+    public static fromText(start: number, text: string, line: Line) {
+      return new LineFragment(line, start, start + text.length);
     }
   }
 
@@ -61,7 +59,7 @@
       this.lastPosition += result.length;
       this.currentResultIndex++;
 
-      return new TextAndPosition(start, result, this.line);
+      return LineFragment.fromText(start, result, this.line);
     }
   }
 
