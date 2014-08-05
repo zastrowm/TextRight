@@ -35,12 +35,14 @@ But this is not a list
 - because it does not
 start with a space
 
+--- Primary list ---
  - List Item 1
  - List Item 2
  - List Item 3
  - List Item 4 followed by
    - Start of sublist 1
    - Start of sublist 2
+--- Secondary List ---
  - List Item 5
  - List Item 6
        Start of a code block
@@ -66,14 +68,21 @@ start with a space
 
     var lineParser = new TextRight.LineParser();
     var blockParser = new TextRight.BlockParser();
+    var nodeParser = new TextRight.NodeParser(
+      new Option(),
+      lineParser,
+      blockParser);
+
     var parsedLines = lineParser.parse(lines);
     var blocks = blockParser.parse(parsedLines);
+    var nodes = nodeParser.parse(blocks);
 
-    console.log(lines);
-    console.log(blocks);
+    console.log("lines", lines);
+    console.log("blocks", blocks);
+    console.log("nodes", nodes);
 
     document.getElementById('text').textContent = JSON.stringify(
-      blocks,
+      nodes,
       function (key, value) {
         if (key == "blockType") {
           return TextRight.BlockType[value].toString();

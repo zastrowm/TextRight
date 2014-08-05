@@ -101,7 +101,7 @@
     }
 
     var data: IListItemBlock = {
-      isOrdered: true,
+      isOrdered: isOrdered,
       blockContent: itemLines,
       lines: lines,
       prefix: prefix

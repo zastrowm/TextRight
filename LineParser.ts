@@ -225,7 +225,7 @@
 
       return new ParsedLine(ParsedLineType.UnorderedListItem, ulData);
     } else if (line.text[0] === ' '
-      && matcher.tryMatch(/^( ?)([0-9]+|#)(\.)( )(.*)$/, line.text, line)) {
+      && matcher.tryMatch(/^( ?)([0-9]+|[a-z]+|#)(\.)( )(.*)$/i, line.text, line)) {
       var olData: IOrderedListItemLine = {
         prefixWhitespace: matcher.nextPosition(),
         prefix: matcher.nextPosition(),
