@@ -189,4 +189,59 @@
       this.cache();
     }
   }
+
+  /**
+   * Allows iterating through an array
+   */
+  export class ArrayIterator<T> {
+    constructor(public array: T[], public index: number = 0) {
+    }
+
+    /** Check if the current position is valid */
+    public get isValid(): boolean {
+      return this.index < this.array.length;
+    }
+
+    /** Get the current element within the array.  Undefined if isValid is false */
+    public get current(): T {
+      return this.array[this.index];
+    }
+
+    /** Iterate to the next object, returning true if the item is current*/
+    public next(): boolean {
+      this.index++;
+      return this.isValid;
+    }
+
+    /**
+     * Look forward or backward into the array
+     * @param seek the number of elements to look ahead (or back)
+     */
+    public peek(seek: number = 1): T {
+      var peekIndex = this.index + seek;
+
+      if (peekIndex < 0 || peekIndex >= this.array.length) {
+        return null;
+      } else {
+        return this.array[peekIndex];
+      }
+    }
+
+    /**
+     * Continuing passing in the next item and consuming items until callback
+     *  returns false
+     */
+    public peekAndConsume(callback: (item: T) => boolean) {
+      var next = this.peek();
+
+      while (next != null) {
+        if (callback(next)) {
+          this.next();
+          next = this.peek();
+        } else {
+          break;
+        }
+      }
+    }
+  }
 }
