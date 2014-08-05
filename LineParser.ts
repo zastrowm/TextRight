@@ -15,7 +15,7 @@
      */
     public static createEmpty(line: ILine): ParsedLine {
       return new ParsedLine(ParsedLineType.Blank, {
-        content: line.getLineFragment()
+        content: line.getFragment(0, line.length)
       });
     }
 
@@ -24,7 +24,7 @@
      */
     public static createText(line: ILine): ParsedLine {
       return new ParsedLine(ParsedLineType.Text, {
-        content: line.getLineFragment()
+        content: line.getFragment(0, line.length)
       });
     }
   }
@@ -334,7 +334,7 @@
     state.continuationMode = LineParserStateContinuationMode.Raw;
 
     var data: IRawStartTagLine = {
-      content: line.getLineFragment(),
+      content: line.getFragment(0, line.length),
       tagName: fakeData.tagName
     };
 
@@ -364,7 +364,7 @@
 
     if (!matcher.tryMatch(/^(<\/)([a-z\-]+)([ \t]*)(>)([ \t]*)$/i, line.text, line)) {
       var textContent: IContentLine = {
-        content: line.getLineFragment(),
+        content: line.getFragment(0, line.length),
       };
 
       state.continuationMode = LineParserStateContinuationMode.Raw;
@@ -378,7 +378,7 @@
       tagNamePostfixWhitespace: matcher.nextPosition(),
       postfix: matcher.nextPosition(),
       eolWhitespace: matcher.nextPosition(),
-      content: line.getLineFragment(),
+      content: line.getFragment(0, line.length),
     };
 
     state.continuationMode = LineParserStateContinuationMode.None;
