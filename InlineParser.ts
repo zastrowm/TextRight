@@ -20,11 +20,16 @@
     }
   }
 
+  export interface IContentNode {
+    content: string;
+  }
+
   export class InlineParser {
     constructor(private options: Options = new Options()) {
     }
 
-    public parse(block: Block) {
+    public parse(block: LineFragment[]): IContentNode {
+      return null;
     }
   }
 }
