@@ -17,8 +17,6 @@
     length: number;
 
     getFragment(start: number, end: number): LineFragment;
-
-    getLineFragment(): LineFragment;
   }
 
   /**
@@ -52,10 +50,6 @@
     public getFragment(start: number, end: number = this.text.length): LineFragment {
       return new LineFragment(this, start, end);
     }
-
-    public getLineFragment(): LineFragment {
-      return new LineFragment(this, 0, this.text.length);
-    }
   }
 
   /**
@@ -84,11 +78,7 @@
     }
 
     public getFragment(start: number, end: number = this.text.length): LineFragment {
-      return new LineFragment(this.line, this.start + start, this.end + end);
-    }
-
-    public getLineFragment(): LineFragment {
-      return new LineFragment(this.line, this.start, this.end);
+      return new LineFragment(this.line, this.start + start, this.start + end);
     }
   }
 
