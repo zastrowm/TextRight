@@ -17,6 +17,29 @@
     length: number;
 
     getFragment(start: number, end: number): LineFragment;
+
+    charAt(start: number): string;
+  }
+
+  export class Parsers {
+    constructor(
+      public options: Options = new Options(),
+      public lineParser: LineParser = new LineParser(options),
+      public blockParser: BlockParser = new BlockParser(options),
+      public inlineParser: InlineParser = new InlineParser(options),
+      public nodeParser: NodeParser = null) {
+    }
+
+    public parseLines(fragments: LineFragment[]): INode[] {
+      var parsedLines = this.lineParser.parse(fragments);
+      var parsedBlocks = this.blockParser.parse(parsedLines);
+      var nodes = this.nodeParser.parse(parsedBlocks);
+
+      console.log("parsedBlocks", parsedBlocks);
+      console.log("nodes", nodes);
+
+      return nodes;
+    }
   }
 
   /**
@@ -50,6 +73,10 @@
     public getFragment(start: number, end: number = this.text.length): LineFragment {
       return new LineFragment(this, start, end);
     }
+
+    public charAt(index: number): string {
+      return this.text[index];
+    }
   }
 
   /**
@@ -79,6 +106,10 @@
 
     public getFragment(start: number, end: number = this.text.length): LineFragment {
       return new LineFragment(this.line, this.start + start, this.start + end);
+    }
+
+    public charAt(index: number): string {
+      return this.line.charAt(this.start + index);
     }
   }
 
@@ -233,5 +264,15 @@
         }
       }
     }
+  }
+
+  /**
+   * Holds the name and value of a key-value pair
+   */
+  export interface IKeyValue {
+    /** The name of the key-value pair*/
+    key: string;
+    /** The value of the key-value pair*/
+    value: string;
   }
 }

@@ -1,13 +1,4 @@
 ﻿module TextRight {
-  function parse(blocks: Block[]) {
-  }
-
-  /** A tag for blocks */
-  export interface ITag {
-    /** The name of the tag */
-    name: string;
-  }
-
   export interface IAttribute {
     key: string;
     value: string;
@@ -24,13 +15,58 @@
     children: INode[];
   }
 
+  function createInlineNode(text: LineFragment, parsers: Parsers): IInlineContent {
+    // TODO
+    return <any>text.text;
+  }
+
+  function createInlineNodes(text: LineFragment[], parsers: Parsers): IInlineContent {
+    // TODO
+    return <any>text.map(l => l.text).join("\n");
+  }
+
+  /** A tag for blocks */
+  export interface ITag {
+    /** The name of the tag */
+    name: string;
+  }
+
+  function createStyleTag(styleBlock: IStyleBlock): ITag {
+    return {
+      name: styleBlock.content
+    };
+  }
+
   export interface IHeadingNode extends INode {
     level: number;
 
     inlineContent: IInlineContent;
   }
 
+  function createHeadingNode(
+    block: IHeadingBlock,
+    tags: ITag[],
+    parsers: Parsers): IHeadingNode {
+    return {
+      type: "HEADING",
+      inlineContent: createInlineNode(block.inlineContent, parsers),
+      tags: tags,
+      level: block.level,
+      children: []
+    };
+  }
+
   export interface IQuoteNode extends INode {
+  }
+
+  function createQuoteNode(block: IQuoteBlock, tags: ITag[], parsers: Parsers): IQuoteNode {
+    var children = parsers.parseLines(block.blockContent);
+
+    return {
+      type: "QUOTE",
+      tags: tags,
+      children: children,
+    };
   }
 
   export interface IListNode extends INode {
@@ -107,130 +143,143 @@
     listType: UnorderedListNodeType;
   }
 
-  export class NodeParser {
-    constructor(
-      private options: Options = new Options(),
-      private lineParser: LineParser = new LineParser(options),
-      private blockParser: BlockParser = new BlockParser(options),
-      private inlineParser: InlineParser = new InlineParser(options)) {
-    }
+  function createListItem(block: IListItemBlock, tags: ITag[], parsers: Parsers): IListNode {
+    var children = parsers.parseLines(block.blockContent);
 
-    private createInlineNode(text: LineFragment): IInlineContent {
-      // TODO
-      return null;
-    }
-
-    private createStyleTag(styleBlock: IStyleBlock): ITag {
-      return {
-        name: styleBlock.content
-      };
-    }
-
-    private getChildren(blocks: LineFragment[]): INode[] {
-      var parsedLines = this.lineParser.parse(blocks);
-      var parsedBlocks = this.blockParser.parse(parsedLines);
-      return this.parse(parsedBlocks);
-    }
-
-    private createHeadingNode(block: IHeadingBlock, tags: ITag[]): IHeadingNode {
-      return {
-        type: "HEADING",
-        inlineContent: this.createInlineNode(block.inlineContent),
-        tags: tags,
-        level: block.level,
-        children: []
-      };
-    }
-
-    private createQuoteNode(block: IQuoteBlock, tags: ITag[]): IQuoteNode {
-      var children = this.getChildren(block.blockContent);
-
-      return {
-        type: "QUOTE",
-        tags: tags,
+    if (block.isOrdered) {
+      var orderedList: IOrderedListNode = {
+        type: "LIST-ORDERED",
         children: children,
+        listInitialValue: block.prefix,
+        listType: determineOrderedListType(block.prefix),
+        tags: tags
       };
+
+      return orderedList;
+    } else {
+      var unorderedlist: IUnorderedListNode = {
+        type: "LIST-UNORDERED",
+        children: children,
+        listInitialValue: block.prefix,
+        tags: tags,
+        listType: determineUnorderedListType(block.prefix)
+      };
+
+      return unorderedlist;
+    }
+  }
+
+  export interface IRawNode extends INode {
+    /** True if the raw block was closed */
+    isClosed: boolean;
+
+    /** True if the raw block was all on one line */
+    isSimple: boolean;
+
+    /** All of the content inside of the start and close tag*/
+    rawContent: string[];
+
+    /** The name of the raw block start and end tag */
+    name: string;
+
+    /** The attributes associated with the raw start tag node. */
+    attributes: IKeyValue[];
+  }
+
+  function createRawNode(block: IRawBlock, tags: ITag[]): IRawNode {
+    var node: IRawNode = {
+      type: "RAW",
+      isClosed: block.isClosed,
+      children: [],
+      isSimple: false,
+      tags: tags,
+      name: block.tagName,
+      attributes: block.attributes,
+      rawContent: block.innerContent.map(c => c.text)
+      };
+
+    return node;
+  }
+
+  export interface IParagraphNode extends INode {
+    inlineContent: IInlineContent;
+  }
+
+  function createParagraphNode(block: IParagraphBlock, tags: ITag[], parsers: Parsers): IParagraphNode {
+    var node: IParagraphNode = {
+      type: "PARAGRAPH",
+      inlineContent: createInlineNodes(block.inlineContent, parsers),
+      tags: tags,
+      children: [],
+    };
+
+    return node;
+  }
+
+  function parse(blocks: Block[], parsers: Parsers): INode[] {
+    var nodes: INode[] = [];
+    var tags: ITag[] = [];
+    var iterator = new ArrayIterator<Block>(blocks);
+
+    while (iterator.isValid) {
+      var shouldNotClear = false;
+      var block = iterator.current;
+
+      switch (block.blockType) {
+        case BlockType.Heading:
+          nodes.push(createHeadingNode(<IHeadingBlock>block.data, tags, parsers));
+          break;
+        case BlockType.ListItem:
+          nodes.push(createListItem(<IListItemBlock>block.data, tags, parsers));
+          break;
+
+        case BlockType.Quote:
+          nodes.push(createQuoteNode(<IQuoteBlock>block.data, tags, parsers));
+          break;
+        case BlockType.Raw:
+          shouldNotClear = true;
+          nodes.push(createRawNode(<IRawBlock>block.data, tags));
+          break;
+        case BlockType.Paragraph:
+          nodes.push(createParagraphNode(<IParagraphBlock>block.data, tags, parsers));
+          break;
+        case BlockType.Style:
+          tags.push(createStyleTag(<IStyleBlock>block.data));
+          shouldNotClear = true;
+          break;
+        case BlockType.Empty:
+          // TODO
+          shouldNotClear = true;
+          nodes.push(<any>{
+            type: "EMPTY"
+          });
+          break;
+        default:
+         throw new Error("Unrecognized block type: " + block.blockType);
+      }
+
+      if (shouldNotClear != true) {
+        tags = [];
+      }
+
+      iterator.next();
     }
 
-    private createList(block: IListItemBlock, tags: ITag[]): IListNode {
-      var children = this.getChildren(block.blockContent);
+    // TODO consolidate list items
+    // TODO remove empty items that aren't part of the rest of stuff
 
-      if (block.isOrdered) {
-        var orderedList: IOrderedListNode = {
-          type: "LIST-ORDERED",
-          children: children,
-          listInitialValue: block.prefix,
-          listType: determineOrderedListType(block.prefix),
-          tags: tags
-        };
+    return nodes;
+  }
 
-        return orderedList;
-      } else {
-        var unorderedlist: IUnorderedListNode = {
-          type: "LIST-UNORDERED",
-          children: children,
-          listInitialValue: block.prefix,
-          tags: tags,
-          listType: determineUnorderedListType(block.prefix)
-        };
-
-        return unorderedlist;
+  export class NodeParser {
+    constructor(private parsers: Parsers = new Parsers()) {
+      if (this.parsers.nodeParser == null) {
+        this.parsers.nodeParser = this;
       }
     }
 
     public parse(blocks: Block[]): INode[] {
-      var nodes: INode[] = [];
-      var tags: ITag[] = [];
-      var iterator = new ArrayIterator<Block>(blocks);
-
-      while (iterator.isValid) {
-        var shouldNotClear = false;
-        var block = iterator.current;
-
-        switch (block.blockType) {
-          case BlockType.Heading:
-            nodes.push(this.createHeadingNode(<IHeadingBlock>block.data, tags));
-            break;
-          case BlockType.ListItem:
-            nodes.push(this.createList(<IListItemBlock>block.data, tags));
-            break;
-
-          case BlockType.Quote:
-            nodes.push(this.createQuoteNode(<IQuoteBlock>block.data, tags));
-            break;
-          case BlockType.Raw:
-            // TODO
-            shouldNotClear = true;
-            nodes.push(<any>{
-              type: "RAW"
-            });
-            break;
-          case BlockType.Style:
-            tags.push(this.createStyleTag(<IStyleBlock>block.data));
-            shouldNotClear = true;
-            break;
-          case BlockType.Empty:
-            // TODO
-            shouldNotClear = true;
-            nodes.push(<any>{
-              type: "EMPTY"
-            });
-            break;
-          default:
-            // throw new Error("Unrecognized block type: " + block.blockType);
-        }
-
-        if (shouldNotClear != true) {
-          tags = [];
-        }
-
-        iterator.next();
-      }
-
-      // TODO consolidate list items
-      // TODO remove empty items that aren't part of the rest of stuff
-
-      return nodes;
+      return parse(blocks, this.parsers);
     }
   }
 } 
