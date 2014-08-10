@@ -120,6 +120,8 @@
     lines: ParsedLine[];
     /** The content between the opening and closing tag. */
     innerContent: LineFragment[];
+    /** Set of attributes present on the start tag of the raw block */
+    attributes: IKeyValue[];
   }
 
   function transformXml(iterator: ArrayIterator<ParsedLine>): Block {
@@ -148,6 +150,8 @@
 
     var data: IRawBlock = {
       tagName: xmlLine.tagName.text,
+      // TODO
+      attributes: [],
       lines: lines,
       innerContent: innerContent,
       isClosed: isClosed

@@ -40,8 +40,8 @@ start with a space
  - List Item 2
  - List Item 3
  - List Item 4 followed by
-   - Start of sublist 1
-   - Start of sublist 2
+    - Start of sublist 1
+    - Start of sublist 2
 --- Secondary List ---
  - List Item 5
  - List Item 6
@@ -69,9 +69,7 @@ start with a space
     var lineParser = new TextRight.LineParser();
     var blockParser = new TextRight.BlockParser();
     var nodeParser = new TextRight.NodeParser(
-      new Option(),
-      lineParser,
-      blockParser);
+      new TextRight.Parsers(new TextRight.Options(), lineParser, blockParser));
 
     var parsedLines = lineParser.parse(lines);
     var blocks = blockParser.parse(parsedLines);

@@ -392,7 +392,7 @@
     var block: ParsedLine;
 
     if (state.continuationMode === LineParserStateContinuationMode.Text) {
-      if (line[0] == ' ' && options.disallowSimpleParagraphs !== true) {
+      if (line.charAt(0) == ' ' && options.disallowSimpleParagraphs !== true) {
         var startOfList = parseBlockListStart(line, state);
         if (startOfList !== null) {
           return startOfList;
