@@ -10,6 +10,7 @@
     <script src="InlineParser.js"></script>
     <script src="NodeParser.js"></script>
     <script src="Util.js"></script>
+    <script src="HtmlRenderer.js"></script>
     <script src="app.js"></script>
 </head>
 <body>
@@ -89,6 +90,9 @@ start with a space
         return value;
       },
       "  ");
+
+    document.body.innerHTML
+      = new TextRight.HtmlRenderer().render(nodes);
   </script>
 </body>
 </html>
