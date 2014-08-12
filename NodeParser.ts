@@ -15,6 +15,16 @@
     children: INode[];
   }
 
+  export class NodeTypes {
+    public static HEADING = "HEADING";
+    public static QUOTE = "QUOTE";
+    public static LISTORDERED = "LISTORDERED";
+    public static LISTUNORDERED = "LISTUNORDERED";
+    public static RAW = "RAW";
+    public static PARAGRAPH = "PARAGRAPH";
+    public static EMPTY = "EMPTY";
+  }
+
   function createInlineNode(text: LineFragment, parsers: Parsers): IInlineContent {
     // TODO
     return <any>text.text;
@@ -48,7 +58,7 @@
     tags: ITag[],
     parsers: Parsers): IHeadingNode {
     return {
-      type: "HEADING",
+      type: NodeTypes.HEADING,
       inlineContent: createInlineNode(block.inlineContent, parsers),
       tags: tags,
       level: block.level,
@@ -63,7 +73,7 @@
     var children = parsers.parseLines(block.blockContent);
 
     return {
-      type: "QUOTE",
+      type: NodeTypes.QUOTE,
       tags: tags,
       children: children,
     };
@@ -148,7 +158,7 @@
 
     if (block.isOrdered) {
       var orderedList: IOrderedListNode = {
-        type: "LIST-ORDERED",
+        type: NodeTypes.LISTORDERED,
         children: children,
         listInitialValue: block.prefix,
         listType: determineOrderedListType(block.prefix),
@@ -158,7 +168,7 @@
       return orderedList;
     } else {
       var unorderedlist: IUnorderedListNode = {
-        type: "LIST-UNORDERED",
+        type: NodeTypes.LISTUNORDERED,
         children: children,
         listInitialValue: block.prefix,
         tags: tags,
@@ -188,7 +198,7 @@
 
   function createRawNode(block: IRawBlock, tags: ITag[]): IRawNode {
     var node: IRawNode = {
-      type: "RAW",
+      type: NodeTypes.RAW,
       isClosed: block.isClosed,
       children: [],
       isSimple: false,
@@ -207,7 +217,7 @@
 
   function createParagraphNode(block: IParagraphBlock, tags: ITag[], parsers: Parsers): IParagraphNode {
     var node: IParagraphNode = {
-      type: "PARAGRAPH",
+      type: NodeTypes.PARAGRAPH,
       inlineContent: createInlineNodes(block.inlineContent, parsers),
       tags: tags,
       children: [],
@@ -219,11 +229,11 @@
   function parse(blocks: Block[], parsers: Parsers): INode[] {
     var nodes: INode[] = [];
     var tags: ITag[] = [];
-    var iterator = new ArrayIterator<Block>(blocks);
+    var readIterator = new ArrayIterator<Block>(blocks);
 
-    while (iterator.isValid) {
+    while (readIterator.isValid) {
       var shouldNotClear = false;
-      var block = iterator.current;
+      var block = readIterator.current;
 
       switch (block.blockType) {
         case BlockType.Heading:
@@ -251,7 +261,7 @@
           // TODO
           shouldNotClear = true;
           nodes.push(<any>{
-            type: "EMPTY"
+            type: NodeTypes.EMPTY
           });
           break;
         default:
@@ -262,7 +272,7 @@
         tags = [];
       }
 
-      iterator.next();
+      readIterator.next();
     }
 
     // TODO consolidate list items

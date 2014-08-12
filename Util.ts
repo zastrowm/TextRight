@@ -228,6 +228,11 @@
       return this.array[this.index];
     }
 
+    /** Set the current element within the array.  Undefined if isValu is false*/
+    public set current(value: T) {
+      this.array[this.index] = value;
+    }
+
     /** Iterate to the next object, returning true if the item is current*/
     public next(): boolean {
       this.index++;
